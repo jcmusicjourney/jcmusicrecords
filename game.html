@@ -8,55 +8,51 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; background: linear-gradient(135deg, #f8f9fa, #e3f2fd); margin: 0; padding: 0; color: #333; }
-        header { background: linear-gradient(to right, #4a6fa5, #6e9cd2); color: #fff; text-align: center; padding: 30px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        header h1 { font-size: 1.8rem; margin: 0 0 8px 0; letter-spacing: 1px; }
-        header p { font-size: 1rem; opacity: 0.9; margin: 0; }
-        .container { max-width: 1000px; margin: 20px auto; padding: 0 15px; }
-        
-        .selection-status { background: #ffffff; padding: 15px 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: sticky; top: 15px; z-index: 100; }
-        .status-text { font-weight: bold; font-size: 1rem; color: #4a6fa5; }
-        
-        button { padding: 10px 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: all 0.2s ease; font-family: inherit; }
+        header { background: linear-gradient(to right, #4a6fa5, #6e9cd2); color: #fff; text-align: center; padding: 40px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        header h1 { font-size: 2rem; margin: 0 0 10px 0; letter-spacing: 2px; }
+        header p { font-size: 1.1rem; opacity: 0.9; margin: 0; }
+        .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+        .selection-status { background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; position: sticky; top: 20px; z-index: 100; }
+        .status-text { font-weight: bold; font-size: 1.1rem; color: #4a6fa5; }
+        .actions-top { display: flex; gap: 12px; }
+        button { padding: 10px 20px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: all 0.3s ease; font-family: inherit; }
         #generateBtn { background: #4a6fa5; color: white; }
         #generateBtn:disabled { background: #ccc; cursor: not-allowed; }
-        .btn-reset { background: #eee; color: #666; margin-left: 8px; }
-
-        .album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; margin-bottom: 40px; }
-        .album-item { background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; position: relative; aspect-ratio: 1 / 1; transition: transform 0.2s; }
-        .album-item:active { transform: scale(0.95); }
+        #generateBtn:not(:disabled):hover { background: #365584; transform: translateY(-2px); }
+        .btn-reset { background: #e0e0e0; color: #666; }
+        .btn-reset:hover { background: #d0d0d0; }
+        .album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; margin-bottom: 50px; }
+        .album-item { background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); cursor: pointer; position: relative; aspect-ratio: 1 / 1; transition: transform 0.2s, box-shadow 0.2s; }
+        .album-item:hover { transform: scale(1.03); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
         .album-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .album-item.selected { outline: 4px solid #4a6fa5; outline-offset: -4px; }
-        .album-badge { position: absolute; top: 5px; right: 5px; background: #4a6fa5; color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; z-index: 2; display: none; }
+        .album-badge { position: absolute; top: 8px; right: 8px; background: #4a6fa5; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 2; display: none; }
         .album-item.selected .album-badge { display: flex; }
-        .album-name { position: absolute; bottom: 0; width: 100%; background: rgba(255,255,255,0.85); color: #333; font-size: 0.7rem; padding: 3px 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        #result-section { display: none; text-align: center; margin-top: 30px; padding: 30px 15px; background: white; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
-        .grid-container { width: 100%; max-width: 450px; margin: 0 auto; position: relative; line-height: 0; }
+        .album-name { position: absolute; bottom: 0; width: 100%; background: rgba(255,255,255,0.9); color: #333; font-size: 0.75rem; padding: 5px 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
-        /* 渲染網格 */
-        .nine-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: #fff; padding: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
-        .grid-cell { background: #f9f9f9; aspect-ratio: 1 / 1; overflow: hidden; }
-        .grid-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        #result-section { display: none; text-align: center; margin-top: 40px; padding: 40px; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .grid-container { width: 100%; max-width: 500px; margin: 0 auto; position: relative; cursor: pointer; }
+        
+        /* 九宮格容器 */
+        .nine-grid { display: grid; grid-template-columns: repeat(3, 1fr); aspect-ratio: 1 / 1; gap: 6px; background: #fff; padding: 6px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        .grid-cell { background: #f0f0f0; aspect-ratio: 1 / 1; overflow: hidden; }
+        .grid-cell img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
 
-        /* 最終合成圖：電腦版透明蓋在上面，手機版直接顯示 */
-        #finalOverlayImage { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            z-index: 10; cursor: pointer; -webkit-touch-callout: default;
+        /* 滑過提示下載 */
+        .grid-container:hover::after {
+            content: "點擊下載完整圖片";
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 1.2rem; border-radius: 4px;
         }
 
-        @media (min-width: 601px) {
-            #finalOverlayImage { opacity: 0; }
-            .grid-container:hover::after {
-                content: "點擊立即下載"; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-                background: rgba(0,0,0,0.4); color: white; display: flex; align-items: center; justify-content: center;
-                font-weight: bold; z-index: 5; pointer-events: none;
-            }
-        }
+        #outputImage { display: none; width: 100%; max-width: 500px; margin: 0 auto; cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
 
-        @media (max-width: 600px) {
-            .album-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-            #finalOverlayImage { position: relative; opacity: 1; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
-            .nine-grid { position: relative; } 
+        @media (max-width: 600px) { 
+            header h1 { font-size: 1.5rem; } 
+            .album-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; } 
+            .grid-container:hover::after { content: ""; background: none; } /* 手機版不需要 Hover 提示 */
         }
     </style>
 </head>
@@ -64,14 +60,14 @@
 
     <header>
         <h1>張學友唱片九宮格</h1>
-        <p>選出 9 張最愛的專輯，點擊生成你的音樂牆</p>
+        <p>選出 9 張最愛的錄音室專輯，製作你的專屬張學友唱片牆</p>
     </header>
 
     <div class="container">
         <div class="selection-status">
-            <div class="status-text" id="statusLabel">請選取 9 張專輯 (0/9)</div>
-            <div>
-                <button id="generateBtn" disabled>生成圖片</button>
+            <div class="status-text" id="statusLabel">請選取專輯 (0 / 9)</div>
+            <div class="actions-top">
+                <button id="generateBtn" disabled>生成九宮格圖片</button>
                 <button id="resetBtn" class="btn-reset">清除</button>
             </div>
         </div>
@@ -79,17 +75,28 @@
         <div class="album-grid" id="albumList"></div>
 
         <div id="result-section">
-            <h2 style="color:#4a6fa5; margin-bottom: 20px;">Your Top 9</h2>
-            <div class="grid-container" id="imageWrapper">
+            <h2 style="color:#4a6fa5;">你的張學友 Top 9</h2>
+            
+            <div class="grid-container" id="clickableArea" onclick="handleImageClick()">
                 <div class="nine-grid" id="captureTarget">
-                    <div class="grid-cell" id="pos-1"></div><div class="grid-cell" id="pos-2"></div><div class="grid-cell" id="pos-3"></div>
-                    <div class="grid-cell" id="pos-4"></div><div class="grid-cell" id="pos-5"></div><div class="grid-cell" id="pos-6"></div>
-                    <div class="grid-cell" id="pos-7"></div><div class="grid-cell" id="pos-8"></div><div class="grid-cell" id="pos-9"></div>
+                    <div class="grid-cell" id="pos-1"></div>
+                    <div class="grid-cell" id="pos-2"></div>
+                    <div class="grid-cell" id="pos-3"></div>
+                    <div class="grid-cell" id="pos-4"></div>
+                    <div class="grid-cell" id="pos-5"></div>
+                    <div class="grid-cell" id="pos-6"></div>
+                    <div class="grid-cell" id="pos-7"></div>
+                    <div class="grid-cell" id="pos-8"></div>
+                    <div class="grid-cell" id="pos-9"></div>
                 </div>
-                <img id="finalOverlayImage" onclick="pcDownload()">
+                <img id="outputImage" alt="Top 9">
             </div>
-            <p id="hintText" style="color:#4a6fa5; font-size: 0.9rem; margin-top: 20px; font-weight: bold;">
-                💡 點擊圖片下載，手機可長按圖片儲存
+
+            <p id="hintText" style="color:#4a6fa5; font-weight:bold; margin-top: 25px;">
+                💡 點擊上方九宮格即可直接下載圖片
+            </p>
+            <p id="mobileHint" style="display:none; color:#e67e22; font-size: 0.9rem;">
+                (手機用戶：點擊後若未自動下載，請長按圖片儲存)
             </p>
         </div>
     </div>
@@ -107,72 +114,100 @@
     ];
 
     let selected = [];
+    let currentImageData = null;
 
     function init() {
-        const list = document.getElementById('albumList');
+        const albumListEl = document.getElementById('albumList');
         albumData.forEach(name => {
             const div = document.createElement('div');
             div.className = 'album-item';
-            const title = (name.split('_')[1] || name).replace(/\.(jpg|png)$/, "");
-            div.innerHTML = `<img src="images/${name}" loading="lazy"><div class="album-badge"></div><div class="album-name">${title}</div>`;
-            div.onclick = () => {
-                const i = selected.indexOf(name);
-                if (i > -1) { selected.splice(i, 1); div.classList.remove('selected'); }
-                else if (selected.length < 9) { selected.push(name); div.classList.add('selected'); }
-                updateUI();
-            };
-            list.appendChild(div);
+            div.dataset.name = name;
+            const displayName = (name.split('_')[1] || name).replace(/\.(jpg|png)$/, "");
+            div.innerHTML = `
+                <img src="images/${name}" alt="${name}" loading="lazy" onerror="this.src='https://via.placeholder.com/200?text=Cover'">
+                <div class="album-badge"></div>
+                <div class="album-name">${displayName}</div>
+            `;
+            div.onclick = () => toggleSelect(name, div);
+            albumListEl.appendChild(div);
         });
+    }
+
+    function toggleSelect(name, el) {
+        const idx = selected.indexOf(name);
+        if (idx > -1) {
+            selected.splice(idx, 1);
+            el.classList.remove('selected');
+        } else if (selected.length < 9) {
+            selected.push(name);
+            el.classList.add('selected');
+        }
+        updateUI();
     }
 
     function updateUI() {
+        const statusLabel = document.getElementById('statusLabel');
+        const generateBtn = document.getElementById('generateBtn');
         document.querySelectorAll('.album-item').forEach(el => {
-            const idx = selected.indexOf(el.querySelector('img').src.split('/').pop());
-            el.querySelector('.album-badge').innerText = idx > -1 ? idx + 1 : "";
+            const orderIdx = selected.indexOf(el.dataset.name);
+            el.querySelector('.album-badge').innerText = orderIdx > -1 ? orderIdx + 1 : "";
         });
-        document.getElementById('statusLabel').innerText = `已選取專輯 (${selected.length}/9)`;
-        document.getElementById('generateBtn').disabled = selected.length !== 9;
+        statusLabel.innerText = `已選取專輯 (${selected.length} / 9)`;
+        generateBtn.disabled = selected.length !== 9;
     }
 
-    document.getElementById('generateBtn').onclick = function() {
-        const res = document.getElementById('result-section');
-        const target = document.getElementById('captureTarget');
-        const overlay = document.getElementById('finalOverlayImage');
-        
-        res.style.display = 'block';
-        selected.forEach((name, i) => {
-            document.getElementById(`pos-${i+1}`).innerHTML = `<img src="images/${name}">`;
-        });
+    // 生成按鈕：負責排列網格並「預生成」圖片
+    document.getElementById('generateBtn').onclick = () => {
+        const resultSection = document.getElementById('result-section');
+        const captureTarget = document.getElementById('captureTarget');
+        const outputImage = document.getElementById('outputImage');
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-        // 秒速生成邏輯：移除延遲
-        html2canvas(target, { scale: 2, useCORS: true, logging: false }).then(canvas => {
-            const imgUrl = canvas.toDataURL('image/png');
-            overlay.src = imgUrl;
-            
-            if (window.innerWidth <= 600) {
-                target.style.display = "none";
-                overlay.style.display = "block";
-            }
-        });
-        window.scrollTo({ top: res.offsetTop - 20, behavior: 'smooth' });
+        resultSection.style.display = 'block';
+        if (isMobile) document.getElementById('mobileHint').style.display = 'block';
+
+        // 填充網格
+        for (let i = 1; i <= 9; i++) {
+            document.getElementById(`pos-${i}`).innerHTML = `<img src="images/${selected[i-1]}">`;
+        }
+
+        // 核心：預先合成圖片
+        setTimeout(() => {
+            html2canvas(captureTarget, { scale: 3, useCORS: true }).then(canvas => {
+                currentImageData = canvas.toDataURL('image/png');
+                outputImage.src = currentImageData;
+                
+                // 如果是手機，我們把 HTML 網格藏起來，換成真的圖片讓他們好長按
+                if (isMobile) {
+                    captureTarget.style.display = 'none';
+                    outputImage.style.display = 'block';
+                }
+            });
+        }, 500);
+
+        window.scrollTo({ top: resultSection.offsetTop - 50, behavior: 'smooth' });
     };
 
-    function pcDownload() {
-        const src = document.getElementById('finalOverlayImage').src;
-        if (!src) return;
-        const a = document.createElement('a');
-        a.href = src; a.download = 'Jacky_Top9.png';
-        a.click();
+    // 點擊圖片區域的行為
+    function handleImageClick() {
+        if (!currentImageData) return;
+
+        const link = document.createElement('a');
+        link.href = currentImageData;
+        link.download = 'Jacky_Cheung_Top9.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     document.getElementById('resetBtn').onclick = () => {
         selected = [];
+        currentImageData = null;
         document.querySelectorAll('.album-item').forEach(el => el.classList.remove('selected'));
         updateUI();
         document.getElementById('result-section').style.display = 'none';
         document.getElementById('captureTarget').style.display = 'grid';
-        document.getElementById('finalOverlayImage').style.display = 'none';
-        document.getElementById('finalOverlayImage').src = "";
+        document.getElementById('outputImage').style.display = 'none';
     };
 
     init();
