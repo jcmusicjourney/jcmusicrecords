@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張學友唱片九宮格產生器</title>
+    <title>張學友唱片九宮格生成器</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -23,7 +23,6 @@
         .btn-reset:hover { background: #d0d0d0; }
         .album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; margin-bottom: 50px; }
         .album-item { background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); cursor: pointer; position: relative; aspect-ratio: 1 / 1; transition: transform 0.2s, box-shadow 0.2s; }
-        .album-item:hover { transform: scale(1.03); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
         .album-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .album-item.selected { outline: 4px solid #4a6fa5; outline-offset: -4px; }
         .album-badge { position: absolute; top: 8px; right: 8px; background: #4a6fa5; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 2; display: none; }
@@ -31,28 +30,35 @@
         .album-name { position: absolute; bottom: 0; width: 100%; background: rgba(255,255,255,0.9); color: #333; font-size: 0.75rem; padding: 5px 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
         #result-section { display: none; text-align: center; margin-top: 40px; padding: 40px; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .grid-container { width: 100%; max-width: 500px; margin: 0 auto; position: relative; cursor: pointer; }
+        .grid-container { width: 100%; max-width: 500px; margin: 0 auto; position: relative; }
         
         /* 九宮格容器 */
         .nine-grid { display: grid; grid-template-columns: repeat(3, 1fr); aspect-ratio: 1 / 1; gap: 6px; background: #fff; padding: 6px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
         .grid-cell { background: #f0f0f0; aspect-ratio: 1 / 1; overflow: hidden; }
         .grid-cell img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
 
-        /* 滑過提示下載 */
-        .grid-container:hover::after {
-            content: "點擊下載完整圖片";
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); color: white;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 1.2rem; border-radius: 4px;
+        /* 電腦版下載提示 */
+        @media (min-width: 601px) {
+            .grid-container:hover::after {
+                content: "點擊下載完整圖片";
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.4); color: white;
+                display: flex; align-items: center; justify-content: center;
+                font-weight: bold; font-size: 1.2rem; border-radius: 4px;
+                pointer-events: none;
+            }
         }
 
-        #outputImage { display: none; width: 100%; max-width: 500px; margin: 0 auto; cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        /* 最終輸出的圖片：在手機上會覆蓋在最上層 */
+        #outputImage { 
+            display: none; width: 100%; max-width: 500px; margin: 0 auto; 
+            cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            -webkit-touch-callout: default; /* 確保 iOS 長按選單出現 */
+        }
 
         @media (max-width: 600px) { 
             header h1 { font-size: 1.5rem; } 
             .album-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; } 
-            .grid-container:hover::after { content: ""; background: none; } /* 手機版不需要 Hover 提示 */
         }
     </style>
 </head>
@@ -75,7 +81,7 @@
         <div class="album-grid" id="albumList"></div>
 
         <div id="result-section">
-            <h2 style="color:#4a6fa5;">你的張學友 Top 9</h2>
+            <h2 id="resultTitle" style="color:#4a6fa5;">你最喜愛的張學友唱片</h2>
             
             <div class="grid-container" id="clickableArea" onclick="handleImageClick()">
                 <div class="nine-grid" id="captureTarget">
@@ -93,10 +99,7 @@
             </div>
 
             <p id="hintText" style="color:#4a6fa5; font-weight:bold; margin-top: 25px;">
-                💡 點擊上方九宮格即可直接下載圖片
-            </p>
-            <p id="mobileHint" style="display:none; color:#e67e22; font-size: 0.9rem;">
-                (手機用戶：點擊後若未自動下載，請長按圖片儲存)
+                💡 正在準備圖片...
             </p>
         </div>
     </div>
@@ -156,31 +159,41 @@
         generateBtn.disabled = selected.length !== 9;
     }
 
-    // 生成按鈕：負責排列網格並「預生成」圖片
     document.getElementById('generateBtn').onclick = () => {
         const resultSection = document.getElementById('result-section');
         const captureTarget = document.getElementById('captureTarget');
         const outputImage = document.getElementById('outputImage');
+        const hintText = document.getElementById('hintText');
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         resultSection.style.display = 'block';
-        if (isMobile) document.getElementById('mobileHint').style.display = 'block';
+        hintText.innerText = "正在為您生成高清九宮格...";
 
-        // 填充網格
+        // 1. 填充網格內容
         for (let i = 1; i <= 9; i++) {
-            document.getElementById(`pos-${i}`).innerHTML = `<img src="images/${selected[i-1]}">`;
+            document.getElementById(`pos-${i}`).innerHTML = `<img src="images/${selected[i-1]}" style="width:100%;height:100%;object-fit:cover;">`;
         }
 
-        // 核心：預先合成圖片
+        // 2. 核心：將網格轉為單一圖片
+        // 稍微延遲確保 DOM 渲染完成
         setTimeout(() => {
-            html2canvas(captureTarget, { scale: 3, useCORS: true }).then(canvas => {
+            html2canvas(captureTarget, { 
+                scale: 2, // 適中的倍率，保證清晰且生成速度快
+                useCORS: true,
+                logging: false
+            }).then(canvas => {
                 currentImageData = canvas.toDataURL('image/png');
                 outputImage.src = currentImageData;
                 
-                // 如果是手機，我們把 HTML 網格藏起來，換成真的圖片讓他們好長按
+                // 重要：在所有平台上都顯示合成後的圖片，隱藏原本的網格
+                // 這樣用戶在手機上長按時，碰到的是一張「整圖」而非「小圖」
+                captureTarget.style.display = 'none';
+                outputImage.style.display = 'block';
+                
                 if (isMobile) {
-                    captureTarget.style.display = 'none';
-                    outputImage.style.display = 'block';
+                    hintText.innerHTML = "✅ 生成完成！<br>請【長按圖片】選擇「儲存圖片」或「加入照片」";
+                } else {
+                    hintText.innerText = "✅ 生成完成！點擊圖片即可下載";
                 }
             });
         }, 500);
@@ -188,9 +201,10 @@
         window.scrollTo({ top: resultSection.offsetTop - 50, behavior: 'smooth' });
     };
 
-    // 點擊圖片區域的行為
     function handleImageClick() {
-        if (!currentImageData) return;
+        // 電腦版點擊下載邏輯
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile || !currentImageData) return; 
 
         const link = document.createElement('a');
         link.href = currentImageData;
@@ -208,6 +222,7 @@
         document.getElementById('result-section').style.display = 'none';
         document.getElementById('captureTarget').style.display = 'grid';
         document.getElementById('outputImage').style.display = 'none';
+        document.getElementById('outputImage').src = "";
     };
 
     init();
