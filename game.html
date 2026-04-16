@@ -73,6 +73,15 @@
                     <div class="grid-cell" id="pos-9"></div>
                 </div>
             </div>
+
+            <div class="nine-grid" id="captureTarget"> ... </div>
+
+<div id="outputContainer" style="margin-top: 20px;">
+    <p id="hintText" style="display:none; color:#4a6fa5; font-weight:bold;">
+        長按下方圖片即可儲存到相簿
+    </p>
+</div>
+        
             <div class="download-area">
                 <button class="btn-download" onclick="downloadImage()">下載九宮格圖片</button>
                 <p style="font-size: 0.8rem; color: #999; margin-top: 10px;">* 建議在個人電腦上進行下載以獲得最佳解析度</p>
@@ -171,18 +180,39 @@
     };
 
     function downloadImage() {
-        const target = document.getElementById('captureTarget');
-        html2canvas(target, { 
-            scale: 2,
-            useCORS: true // 增加這行以確保圖片跨域加載正常
-        }).then(canvas => {
-            const link = document.createElement('a');
-            link.download = 'Jacky_Cheung_Collection.png';
-            link.href = canvas.toDataURL();
-            link.click();
-        });
-    }
+    const target = document.getElementById('captureTarget');
+    const outputContainer = document.getElementById('outputContainer');
+    const hintText = document.getElementById('hintText');
 
+    html2canvas(target, { 
+        scale: 3, // 提高手機上的清晰度
+        useCORS: true,
+        logging: false
+    }).then(canvas => {
+        // 將畫布轉為圖片數據
+        const imgData = canvas.toDataURL('image/png');
+        
+        // 創建一個真正的 <img> 標籤
+        const img = new Image();
+        img.src = imgData;
+        img.style.width = '100%';
+        img.style.maxWidth = '500px';
+        img.style.boxShadow = '0 5px 15px rgba(0,0,0,0.2)';
+
+        // 清空舊圖片並放入新圖片
+        outputContainer.innerHTML = ''; 
+        outputContainer.appendChild(img);
+        
+        // 顯示提示文字
+        hintText.style.display = 'block';
+
+        // 針對電腦用戶，保留自動下載嘗試
+        const link = document.createElement('a');
+        link.download = 'Jacky_Cheung_Top9.png';
+        link.href = imgData;
+        link.click();
+    });
+}
     init();
 </script>
 </body>
