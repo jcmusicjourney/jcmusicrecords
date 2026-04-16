@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>張學友錄音室唱片九宮格</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #4a6fa5;
+            --gradient-bg: linear-gradient(135deg, #f8f9fa, #e3f2fd);
+            --header-blue: #4a6fa5;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Noto Sans TC', sans-serif;
+            background: var(--gradient-bg);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .home-container {
+            text-align: center;
+            padding: 40px;
+            max-width: 800px;
+            animation: fadeIn 1.2s ease-out;
+        }
+
+        /* 標題設計 */
+        h1 {
+            font-size: clamp(2.5rem, 8vw, 3.5rem);
+            color: var(--header-blue);
+            margin-bottom: 24px;
+            letter-spacing: 6px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* 副標題設計 */
+        p {
+            font-size: clamp(1.1rem, 4vw, 1.5rem);
+            color: #5a7a9d;
+            margin-bottom: 50px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            line-height: 1.6;
+        }
+
+        /* 開始按鈕 */
+        .btn-start {
+            display: inline-block;
+            padding: 18px 65px;
+            font-size: 1.25rem;
+            background: linear-gradient(to right, #4a6fa5, #6e9cd2);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            box-shadow: 0 10px 25px rgba(74, 111, 165, 0.3);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(74, 111, 165, 0.4);
+            filter: brightness(1.1);
+        }
+
+        /* 底部裝飾 (可選) */
+        .footer-note {
+            position: absolute;
+            bottom: 30px;
+            font-size: 0.8rem;
+            color: #99abbd;
+            letter-spacing: 1px;
+        }
+
+        /* 入場動畫 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 簡單的背景動態效果 */
+        .bg-glow {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(74, 111, 165, 0.1) 0%, rgba(255,255,255,0) 70%);
+            z-index: -1;
+            top: 20%;
+            left: 15%;
+            filter: blur(50px);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-glow"></div>
+
+    <main class="home-container">
+        <h1>張學友錄音室唱片九宮格</h1>
+        <p>在張學友的錄音室唱片中，<br>哪 9 張是你的最愛？</p>
+        
+        <a href="game.html" class="btn-start">進入遊戲</a>
+    </main>
+
+    <div class="footer-note">Jacky Cheung Studio Album Grid Project</div>
+
+</body>
+</html>
