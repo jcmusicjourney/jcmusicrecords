@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>張學友唱片九宮格產生器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* 基礎風格：套用你提供的設計 */
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #f8f9fa, #e3f2fd);
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        header {
+            background: linear-gradient(to right, #4a6fa5, #6e9cd2);
+            color: #fff;
+            text-align: center;
+            padding: 40px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        header h1 {
+            font-size: 2rem;
+            margin: 0 0 10px 0;
+            letter-spacing: 2px;
+        }
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        /* 統計與控制區 */
+        .selection-status {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+        }
+        .status-text { font-weight: bold; font-size: 1.1rem; color: #4a6fa5; }
+        
+        .actions-top { display: flex; gap: 12px; }
+
+        /* 按鈕設計 */
+        button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        #generateBtn {
+            background: #4a6fa5;
+            color: white;
+        }
+        #generateBtn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #generateBtn:not(:disabled):hover {
+            background: #365584;
+            transform: translateY(-2px);
+        }
+        .btn-reset { background: #e0e0e0; color: #666; }
+        .btn-reset:hover { background: #d0d0d0; }
+
+        /* 專輯選擇網格 */
+        .album-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 15px;
+            margin-bottom: 50px;
+        }
+        .album-item {
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            cursor: pointer;
+            position: relative;
+            aspect-ratio: 1 / 1;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .album-item:hover {
+            transform: scale(1.03);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        .album-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .album-item.selected {
+            outline: 4px solid #4a6fa5;
+            outline-offset: -4px;
+        }
+        .album-badge {
+            position: absolute;
+            top: 8px; right: 8px;
+            background: #4a6fa5;
+            color: white;
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 2;
+            display: none;
+        }
+        .album-item.selected .album-badge { display: flex; }
+        .album-name {
+            position: absolute; bottom: 0; width: 100%;
+            background: rgba(255,255,255,0.9);
+            color: #333; font-size: 0.75rem;
+            padding: 5px 0; text-align: center;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* 最終九宮格結果 */
+        #result-section {
+            display: none;
+            text-align: center;
+            margin-top: 40px;
+            padding: 40px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .grid-container {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .nine-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            aspect-ratio: 1 / 1;
+            gap: 6px;
+            background: #fff; /* 這是格線顏色 */
+            padding: 6px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        .grid-cell {
+            background: #f0f0f0;
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+        }
+        .grid-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        .download-area { margin-top: 30px; }
+        .btn-download {
+            background: #28a745;
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.5rem; }
+            .album-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .status-text { font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>張學友唱片九宮格</h1>
+        <p>選出 9 張最愛的錄音室專輯，製作你的專屬音樂牆</p>
+    </header>
+
+    <div class="container">
+        <div class="selection-status">
+            <div class="status-text" id="statusLabel">請選取專輯 (0 / 9)</div>
+            <div class="actions-top">
+                <button id="generateBtn" disabled>生成九宮格圖片</button>
+                <button id="resetBtn" class="btn-reset">清除</button>
+            </div>
+        </div>
+
+        <div class="album-grid" id="albumList"></div>
+
+        <div id="result-section">
+            <h2 style="color:#4a6fa5;">你的張學友 Top 9</h2>
+            <div class="grid-container">
+                <div class="nine-grid" id="captureTarget">
+                    <div class="grid-cell" id="pos-5"></div>
+                    <div class="grid-cell" id="pos-4"></div>
+                    <div class="grid-cell" id="pos-7"></div>
+                    <div class="grid-cell" id="pos-3"></div>
+                    <div class="grid-cell" id="pos-1"></div>
+                    <div class="grid-cell" id="pos-2"></div>
+                    <div class="grid-cell" id="pos-8"></div>
+                    <div class="grid-cell" id="pos-6"></div>
+                    <div class="grid-cell" id="pos-9"></div>
+                </div>
+            </div>
+            <div class="download-area">
+                <button class="btn-download" onclick="downloadImage()">下載九宮格圖片</button>
+                <p style="font-size: 0.8rem; color: #999; margin-top: 10px;">* 建議在個人電腦上進行下載以獲得最佳解析度</p>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const albumData = [
+        "1985_Smile", "1986_遙遠的她AMOUR", "1986_情無四歸", "1986_相愛", "1987_在我心深處",
+        "1987_Jacky", "1988_意亂情迷", "1988_昨夜夢魂中", "1989_給我親愛的", "1989_似曾相識",
+        "1989_祇願一生愛一人", "1990_夢中的你", "1991_情不禁", "1991_一顆不變心", "1992_真情流露",
+        "1992_愛火花", "1993_吻別", "1993_我與你", "1993_祝福", "1994_餓狼傳說", "1994_偷心",
+        "1994_這個冬天不太冷", "1995_過敏世界", "1995_擁友", "1996_忘記你我做不到", "1997_不老的傳說",
+        "1997_想和你去吹吹風", "1998_釋放自己", "1998_不後悔", "1999_有個人", "1999_走過1999",
+        "2000_Touch of Love", "2001_天下第一流", "2001_學友熱", "2002_他在那裡", "2004_Life is like a dream",
+        "2007_在你身邊", "2010_Private Corner", "2014_醒著做夢"
+    ];
+
+    let selected = [];
+    const albumListEl = document.getElementById('albumList');
+    const statusLabel = document.getElementById('statusLabel');
+    const generateBtn = document.getElementById('generateBtn');
+
+    function init() {
+        albumData.forEach(name => {
+            const div = document.createElement('div');
+            div.className = 'album-item';
+            div.dataset.name = name;
+            
+            // 檔名處理：將下底線轉為空白顯示
+            const displayName = name.split('_')[1] || name;
+            
+            div.innerHTML = `
+                <img src="images/${name}.jpg" alt="${name}" loading="lazy" onerror="this.src='https://via.placeholder.com/200?text=Cover'">
+                <div class="album-badge"></div>
+                <div class="album-name">${displayName}</div>
+            `;
+            
+            div.onclick = () => {
+                const idx = selected.indexOf(name);
+                if (idx > -1) {
+                    selected.splice(idx, 1);
+                    div.classList.remove('selected');
+                } else if (selected.length < 9) {
+                    selected.push(name);
+                    div.classList.add('selected');
+                }
+                updateUI();
+            };
+            albumListEl.appendChild(div);
+        });
+    }
+
+    function updateUI() {
+        // 更新 Badge 數字
+        document.querySelectorAll('.album-item').forEach(el => {
+            const name = el.dataset.name;
+            const orderIdx = selected.indexOf(name);
+            const badge = el.querySelector('.album-badge');
+            if (orderIdx > -1) {
+                badge.innerText = orderIdx + 1;
+            }
+        });
+
+        statusLabel.innerText = `已選取專輯 (${selected.length} / 9)`;
+        generateBtn.disabled = selected.length !== 9;
+        
+        if (selected.length === 9) {
+            statusLabel.style.color = "#28a745";
+            statusLabel.innerText = "✓ 已選滿 9 張，可以生成了！";
+        } else {
+            statusLabel.style.color = "#4a6fa5";
+        }
+    }
+
+    generateBtn.onclick = () => {
+        const resultSection = document.getElementById('result-section');
+        resultSection.style.display = 'block';
+        
+        // 渲染對應位置 (selected[0] 是玩家第1順位)
+        for (let i = 1; i <= 9; i++) {
+            const albumName = selected[i-1];
+            const cell = document.getElementById(`pos-${i}`);
+            cell.innerHTML = `<img src="images/${albumName}.jpg">`;
+        }
+        
+        window.scrollTo({ top: resultSection.offsetTop - 100, behavior: 'smooth' });
+    };
+
+    document.getElementById('resetBtn').onclick = () => {
+        selected = [];
+        document.querySelectorAll('.album-item').forEach(el => el.classList.remove('selected'));
+        updateUI();
+        document.getElementById('result-section').style.display = 'none';
+    };
+
+    function downloadImage() {
+        const target = document.getElementById('captureTarget');
+        html2canvas(target, { scale: 2 }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'Jacky_Cheung_Collection.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+    }
+
+    init();
+</script>
+</body>
+</html>
