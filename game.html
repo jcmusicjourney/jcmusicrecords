@@ -31,28 +31,36 @@
         .album-name { position: absolute; bottom: 0; width: 100%; background: rgba(255,255,255,0.9); color: #333; font-size: 0.75rem; padding: 5px 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
         #result-section { display: none; text-align: center; margin-top: 40px; padding: 40px; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .grid-container { width: 100%; max-width: 500px; margin: 0 auto; position: relative; cursor: pointer; }
         
-        /* 九宮格容器 */
+        /* 九宮格展示區域 */
+        .grid-container { width: 100%; max-width: 500px; margin: 0 auto; position: relative; }
         .nine-grid { display: grid; grid-template-columns: repeat(3, 1fr); aspect-ratio: 1 / 1; gap: 6px; background: #fff; padding: 6px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
         .grid-cell { background: #f0f0f0; aspect-ratio: 1 / 1; overflow: hidden; }
-        .grid-cell img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+        .grid-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-        /* 滑過提示下載 */
-        .grid-container:hover::after {
-            content: "點擊下載完整圖片";
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); color: white;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 1.2rem; border-radius: 4px;
+        /* 關鍵修復：覆蓋在最上層的透明下載圖層 */
+        #finalOverlayImage { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            opacity: 0; /* 平時看不見，但它是真實的圖片 */
+            cursor: pointer; z-index: 10;
         }
 
-        #outputImage { display: none; width: 100%; max-width: 500px; margin: 0 auto; cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        /* 電腦版 Hover 效果 */
+        @media (min-width: 601px) {
+            .grid-container:hover::after {
+                content: "點擊立即下載圖片";
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.5); color: white;
+                display: flex; align-items: center; justify-content: center;
+                font-weight: bold; font-size: 1.2rem; z-index: 5; pointer-events: none;
+            }
+        }
 
         @media (max-width: 600px) { 
             header h1 { font-size: 1.5rem; } 
             .album-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; } 
-            .grid-container:hover::after { content: ""; background: none; } /* 手機版不需要 Hover 提示 */
+            #finalOverlayImage { opacity: 1; position: relative; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+            .nine-grid { display: none; } /* 手機版生成後直接換成圖片 */
         }
     </style>
 </head>
@@ -77,7 +85,7 @@
         <div id="result-section">
             <h2 style="color:#4a6fa5;">你的張學友 Top 9</h2>
             
-            <div class="grid-container" id="clickableArea" onclick="handleImageClick()">
+            <div class="grid-container" id="imageWrapper">
                 <div class="nine-grid" id="captureTarget">
                     <div class="grid-cell" id="pos-1"></div>
                     <div class="grid-cell" id="pos-2"></div>
@@ -89,14 +97,11 @@
                     <div class="grid-cell" id="pos-8"></div>
                     <div class="grid-cell" id="pos-9"></div>
                 </div>
-                <img id="outputImage" alt="Top 9">
+                <img id="finalOverlayImage" alt="Long press to save" onclick="pcDownload()">
             </div>
 
             <p id="hintText" style="color:#4a6fa5; font-weight:bold; margin-top: 25px;">
-                💡 點擊上方九宮格即可直接下載圖片
-            </p>
-            <p id="mobileHint" style="display:none; color:#e67e22; font-size: 0.9rem;">
-                (手機用戶：點擊後若未自動下載，請長按圖片儲存)
+                💡 點擊圖片即可下載，手機可長按圖片儲存
             </p>
         </div>
     </div>
@@ -114,7 +119,6 @@
     ];
 
     let selected = [];
-    let currentImageData = null;
 
     function init() {
         const albumListEl = document.getElementById('albumList');
@@ -123,77 +127,67 @@
             div.className = 'album-item';
             div.dataset.name = name;
             const displayName = (name.split('_')[1] || name).replace(/\.(jpg|png)$/, "");
-            div.innerHTML = `
-                <img src="images/${name}" alt="${name}" loading="lazy" onerror="this.src='https://via.placeholder.com/200?text=Cover'">
-                <div class="album-badge"></div>
-                <div class="album-name">${displayName}</div>
-            `;
-            div.onclick = () => toggleSelect(name, div);
+            div.innerHTML = `<img src="images/${name}" loading="lazy" onerror="this.src='https://via.placeholder.com/200'"><div class="album-badge"></div><div class="album-name">${displayName}</div>`;
+            div.onclick = () => {
+                const idx = selected.indexOf(name);
+                if (idx > -1) { selected.splice(idx, 1); div.classList.remove('selected'); }
+                else if (selected.length < 9) { selected.push(name); div.classList.add('selected'); }
+                updateUI();
+            };
             albumListEl.appendChild(div);
         });
     }
 
-    function toggleSelect(name, el) {
-        const idx = selected.indexOf(name);
-        if (idx > -1) {
-            selected.splice(idx, 1);
-            el.classList.remove('selected');
-        } else if (selected.length < 9) {
-            selected.push(name);
-            el.classList.add('selected');
-        }
-        updateUI();
-    }
-
     function updateUI() {
-        const statusLabel = document.getElementById('statusLabel');
-        const generateBtn = document.getElementById('generateBtn');
         document.querySelectorAll('.album-item').forEach(el => {
             const orderIdx = selected.indexOf(el.dataset.name);
             el.querySelector('.album-badge').innerText = orderIdx > -1 ? orderIdx + 1 : "";
         });
-        statusLabel.innerText = `已選取專輯 (${selected.length} / 9)`;
-        generateBtn.disabled = selected.length !== 9;
+        document.getElementById('statusLabel').innerText = `已選取專輯 (${selected.length} / 9)`;
+        document.getElementById('generateBtn').disabled = selected.length !== 9;
     }
 
-    // 生成按鈕：負責排列網格並「預生成」圖片
     document.getElementById('generateBtn').onclick = () => {
-        const resultSection = document.getElementById('result-section');
-        const captureTarget = document.getElementById('captureTarget');
-        const outputImage = document.getElementById('outputImage');
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const res = document.getElementById('result-section');
+        const target = document.getElementById('captureTarget');
+        const overlay = document.getElementById('finalOverlayImage');
+        const hint = document.getElementById('hintText');
+        
+        res.style.display = 'block';
+        hint.innerText = "⏳ 正在生成高品質圖片...";
 
-        resultSection.style.display = 'block';
-        if (isMobile) document.getElementById('mobileHint').style.display = 'block';
-
-        // 填充網格
+        // 填充圖片
         for (let i = 1; i <= 9; i++) {
             document.getElementById(`pos-${i}`).innerHTML = `<img src="images/${selected[i-1]}">`;
         }
 
-        // 核心：預先合成圖片
+        // 延遲生成確保圖片載入
         setTimeout(() => {
-            html2canvas(captureTarget, { scale: 3, useCORS: true }).then(canvas => {
-                currentImageData = canvas.toDataURL('image/png');
-                outputImage.src = currentImageData;
+            html2canvas(target, { scale: 3, useCORS: true }).then(canvas => {
+                const dataUrl = canvas.toDataURL('image/png');
+                overlay.src = dataUrl;
+                hint.innerText = "✅ 生成完成！點擊下載或長按儲存。";
                 
-                // 如果是手機，我們把 HTML 網格藏起來，換成真的圖片讓他們好長按
-                if (isMobile) {
-                    captureTarget.style.display = 'none';
-                    outputImage.style.display = 'block';
+                // 電腦版讓圖片變透明蓋在網格上，手機版則直接顯示
+                if (window.innerWidth > 600) {
+                    overlay.style.opacity = "0";
+                } else {
+                    target.style.display = "none";
+                    overlay.style.display = "block";
                 }
             });
-        }, 500);
+        }, 800);
 
-        window.scrollTo({ top: resultSection.offsetTop - 50, behavior: 'smooth' });
+        window.scrollTo({ top: res.offsetTop - 50, behavior: 'smooth' });
     };
 
-    // 點擊圖片區域的行為
-    function handleImageClick() {
-        if (!currentImageData) return;
-
+    // 電腦版點擊下載
+    function pcDownload() {
+        const overlay = document.getElementById('finalOverlayImage');
+        if (!overlay.src || overlay.src.includes('undefined')) return;
+        
         const link = document.createElement('a');
-        link.href = currentImageData;
+        link.href = overlay.src;
         link.download = 'Jacky_Cheung_Top9.png';
         document.body.appendChild(link);
         link.click();
@@ -202,12 +196,11 @@
 
     document.getElementById('resetBtn').onclick = () => {
         selected = [];
-        currentImageData = null;
         document.querySelectorAll('.album-item').forEach(el => el.classList.remove('selected'));
         updateUI();
         document.getElementById('result-section').style.display = 'none';
         document.getElementById('captureTarget').style.display = 'grid';
-        document.getElementById('outputImage').style.display = 'none';
+        document.getElementById('finalOverlayImage').src = "";
     };
 
     init();
