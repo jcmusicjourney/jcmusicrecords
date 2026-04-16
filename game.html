@@ -47,12 +47,13 @@
             font-weight: bold; font-size: 1.2rem; border-radius: 4px;
         }
 
-        #outputImage { display: none; width: 100%; max-width: 500px; margin: 0 auto; cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        #outputImage { display: none; width: 100%; max-width: 500px; margin: 0 auto; cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.2); -webkit-touch-callout: default; }
 
         @media (max-width: 600px) { 
             header h1 { font-size: 1.5rem; } 
             .album-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; } 
-            .grid-container:hover::after { content: ""; background: none; } /* 手機版不需要 Hover 提示 */
+            .grid-container:hover::after { content: ""; background: none; }
+            #result-section { padding: 20px; }
         }
     </style>
 </head>
@@ -93,10 +94,10 @@
             </div>
 
             <p id="hintText" style="color:#4a6fa5; font-weight:bold; margin-top: 25px;">
-                💡 點擊上方九宮格即可直接下載圖片
+                💡 正在快速生成圖片...
             </p>
-            <p id="mobileHint" style="display:none; color:#e67e22; font-size: 0.9rem;">
-                (手機用戶：點擊後若未自動下載，請長按圖片儲存)
+            <p id="mobileHint" style="display:none; color:#e67e22; font-size: 0.9rem; font-weight: bold;">
+                【手機用戶專屬：請長按上方圖片儲存】
             </p>
         </div>
     </div>
@@ -156,41 +157,52 @@
         generateBtn.disabled = selected.length !== 9;
     }
 
-    // 生成按鈕：負責排列網格並「預生成」圖片
     document.getElementById('generateBtn').onclick = () => {
         const resultSection = document.getElementById('result-section');
         const captureTarget = document.getElementById('captureTarget');
         const outputImage = document.getElementById('outputImage');
+        const hintText = document.getElementById('hintText');
+        const mobileHint = document.getElementById('mobileHint');
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         resultSection.style.display = 'block';
-        if (isMobile) document.getElementById('mobileHint').style.display = 'block';
+        
+        // --- 修改部分：自定義九宮格次序 ---
+        // 你的要求：上(5,4,7) 中(3,1,2) 下(8,6,9)
+        // map 陣列代表：網格位置 1-9 分別放入第幾個選取的唱片 (索引從 0 開始，所以要 -1)
+        const orderMap = [4, 3, 6, 2, 0, 1, 7, 5, 8]; 
 
-        // 填充網格
-        for (let i = 1; i <= 9; i++) {
-            document.getElementById(`pos-${i}`).innerHTML = `<img src="images/${selected[i-1]}">`;
+        for (let i = 0; i < 9; i++) {
+            const targetPos = i + 1; // 網格 ID (pos-1 到 pos-9)
+            const albumIndex = orderMap[i]; // 對應選取的第幾張
+            document.getElementById(`pos-${targetPos}`).innerHTML = 
+                `<img src="images/${selected[albumIndex]}" style="width:100%;height:100%;object-fit:cover;">`;
         }
+        // --- 修改完畢 ---
 
-        // 核心：預先合成圖片
         setTimeout(() => {
-            html2canvas(captureTarget, { scale: 3, useCORS: true }).then(canvas => {
+            html2canvas(captureTarget, { 
+                scale: 1.2, 
+                useCORS: true,
+                logging: false,
+                backgroundColor: "#ffffff"
+            }).then(canvas => {
                 currentImageData = canvas.toDataURL('image/png');
                 outputImage.src = currentImageData;
-                
-                // 如果是手機，我們把 HTML 網格藏起來，換成真的圖片讓他們好長按
-                if (isMobile) {
-                    captureTarget.style.display = 'none';
-                    outputImage.style.display = 'block';
-                }
+                captureTarget.style.display = 'none';
+                outputImage.style.display = 'block';
+                hintText.innerText = isMobile ? "✅ 生成完成！" : "✅ 生成完成！點擊即可下載";
+                if (isMobile) mobileHint.style.display = 'block';
             });
-        }, 500);
+        }, 300);
 
         window.scrollTo({ top: resultSection.offsetTop - 50, behavior: 'smooth' });
     };
 
-    // 點擊圖片區域的行為
     function handleImageClick() {
         if (!currentImageData) return;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) return;
 
         const link = document.createElement('a');
         link.href = currentImageData;
@@ -208,6 +220,7 @@
         document.getElementById('result-section').style.display = 'none';
         document.getElementById('captureTarget').style.display = 'grid';
         document.getElementById('outputImage').style.display = 'none';
+        document.getElementById('mobileHint').style.display = 'none';
     };
 
     init();
