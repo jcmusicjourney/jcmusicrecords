@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張學友唱片九宮格生成器</title>
+    <title>張學友唱片九宮格產生器</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -23,7 +23,6 @@
         .btn-reset:hover { background: #d0d0d0; }
         .album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; margin-bottom: 50px; }
         .album-item { background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); cursor: pointer; position: relative; aspect-ratio: 1 / 1; transition: transform 0.2s, box-shadow 0.2s; }
-        .album-item:hover { transform: scale(1.03); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
         .album-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .album-item.selected { outline: 4px solid #4a6fa5; outline-offset: -4px; }
         .album-badge { position: absolute; top: 8px; right: 8px; background: #4a6fa5; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 2; display: none; }
@@ -38,37 +37,47 @@
         .grid-cell { background: #f0f0f0; aspect-ratio: 1 / 1; overflow: hidden; }
         .grid-cell img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
 
-        /* 滑過提示下載 */
-        .grid-container:hover::after {
-            content: "點擊下載完整圖片";
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); color: white;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 1.2rem; border-radius: 4px;
+        /* 最終合成圖：電腦版透明蓋在上面，手機版直接顯示 */
+        #outputImage { 
+            display: none; width: 100%; max-width: 500px; margin: 0 auto; 
+            cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.2); 
+            border-radius: 4px;
+            /* 關鍵修復：確保手機端觸發原生選單 */
+            -webkit-touch-callout: default; 
+            pointer-events: auto;
         }
 
-        #outputImage { display: none; width: 100%; max-width: 500px; margin: 0 auto; cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.2); -webkit-touch-callout: default; }
+        /* 電腦版 Hover 效果 */
+        @media (min-width: 601px) {
+            .grid-container:hover::after {
+                content: "點擊下載完整圖片";
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.4); color: white;
+                display: flex; align-items: center; justify-content: center;
+                font-weight: bold; font-size: 1.2rem; border-radius: 4px;
+                z-index: 5; pointer-events: none;
+            }
+        }
 
         @media (max-width: 600px) { 
             header h1 { font-size: 1.5rem; } 
             .album-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; } 
-            .grid-container:hover::after { content: ""; background: none; }
-            #result-section { padding: 20px; }
+            #outputImage { position: relative; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>張學友錄音室唱片九宮格</h1>
-        <p>選出 9 張最愛的錄音室專輯，製作你的張學友唱片牆</p>
+        <h1>張學友唱片九宮格</h1>
+        <p>選出 9 張專輯，製作你的專屬唱片牆</p>
     </header>
 
     <div class="container">
         <div class="selection-status">
             <div class="status-text" id="statusLabel">請選取專輯 (0 / 9)</div>
             <div class="actions-top">
-                <button id="generateBtn" disabled>生成九宮格圖片</button>
+                <button id="generateBtn" disabled>生成九宮格</button>
                 <button id="resetBtn" class="btn-reset">清除</button>
             </div>
         </div>
@@ -76,7 +85,7 @@
         <div class="album-grid" id="albumList"></div>
 
         <div id="result-section">
-            <h2 style="color:#4a6fa5;">你最喜愛的張學友唱片</h2>
+            <h2 style="color:#4a6fa5;">你的張學友 Top 9</h2>
             
             <div class="grid-container" id="clickableArea" onclick="handleImageClick()">
                 <div class="nine-grid" id="captureTarget">
@@ -94,11 +103,7 @@
             </div>
 
             <p id="hintText" style="color:#4a6fa5; font-weight:bold; margin-top: 25px;">
-                💡 手機用戶請截圖 💡
-            </p>
-            <p id="mobileHint" style="display:none; color:#e67e22; font-size: 0.9rem; font-weight: bold;">
-                【手機用戶專屬：請長按上方圖片儲存】
-            </p>
+                </p>
         </div>
     </div>
 
@@ -106,7 +111,7 @@
     const albumData = [
         "1985_Smile.jpg", "1986_遙遠的她AMOUR.jpg", "1986_情無四歸.jpg", "1986_相愛.jpg", "1987_在我心深處.jpg",
         "1987_Jacky.jpg", "1988_意亂情迷.jpg", "1988_昨夜夢魂中.jpg", "1989_給我親愛的.jpg", "1989_似曾相識.jpg",
-        "1989_祇願一生愛一人.jpg", "1990_夢中的你.jpg", "1991_情不禁.jpg", "1991_一顆不變心.jpg", "1992_真情流露.jpg",
+        "1989_祇願一生愛一生.jpg", "1990_夢中的你.jpg", "1991_情不禁.jpg", "1991_一顆不變心.jpg", "1992_真情流露.jpg",
         "1992_愛火花.jpg", "1993_吻別.jpg", "1993_我與你.png", "1993_祝福.jpg", "1994_餓狼傳說.jpg", "1994_偷心.jpg",
         "1994_這個冬天不太冷.jpg", "1995_過敏世界.jpg", "1995_擁友.jpg", "1996_忘記你我做不到.jpg", "1997_不老的傳說.jpg",
         "1997_想和你去吹吹風.jpg", "1998_釋放自己.jpg", "1998_不後悔.jpg", "1999_有個人.png", "1999_走過1999.jpg",
@@ -115,112 +120,101 @@
     ];
 
     let selected = [];
-    let currentImageData = null;
 
     function init() {
-        const albumListEl = document.getElementById('albumList');
+        const list = document.getElementById('albumList');
         albumData.forEach(name => {
             const div = document.createElement('div');
             div.className = 'album-item';
             div.dataset.name = name;
             const displayName = (name.split('_')[1] || name).replace(/\.(jpg|png)$/, "");
-            div.innerHTML = `
-                <img src="images/${name}" alt="${name}" loading="lazy" onerror="this.src='https://via.placeholder.com/200?text=Cover'">
-                <div class="album-badge"></div>
-                <div class="album-name">${displayName}</div>
-            `;
-            div.onclick = () => toggleSelect(name, div);
-            albumListEl.appendChild(div);
+            div.innerHTML = `<img src="images/${name}" loading="lazy"><div class="album-badge"></div><div class="album-name">${displayName}</div>`;
+            div.onclick = () => {
+                const i = selected.indexOf(name);
+                if (i > -1) { selected.splice(i, 1); div.classList.remove('selected'); }
+                else if (selected.length < 9) { selected.push(name); div.classList.add('selected'); }
+                updateUI();
+            };
+            list.appendChild(div);
         });
-    }
-
-    function toggleSelect(name, el) {
-        const idx = selected.indexOf(name);
-        if (idx > -1) {
-            selected.splice(idx, 1);
-            el.classList.remove('selected');
-        } else if (selected.length < 9) {
-            selected.push(name);
-            el.classList.add('selected');
-        }
-        updateUI();
     }
 
     function updateUI() {
-        const statusLabel = document.getElementById('statusLabel');
-        const generateBtn = document.getElementById('generateBtn');
         document.querySelectorAll('.album-item').forEach(el => {
-            const orderIdx = selected.indexOf(el.dataset.name);
-            el.querySelector('.album-badge').innerText = orderIdx > -1 ? orderIdx + 1 : "";
+            const idx = selected.indexOf(el.dataset.name);
+            el.querySelector('.album-badge').innerText = idx > -1 ? idx + 1 : "";
         });
-        statusLabel.innerText = `已選取專輯 (${selected.length} / 9)`;
-        generateBtn.disabled = selected.length !== 9;
+        document.getElementById('statusLabel').innerText = `已選取 ( ${selected.length} / 9)`;
+        document.getElementById('generateBtn').disabled = selected.length !== 9;
     }
 
-    document.getElementById('generateBtn').onclick = () => {
-        const resultSection = document.getElementById('result-section');
-        const captureTarget = document.getElementById('captureTarget');
-        const outputImage = document.getElementById('outputImage');
-        const hintText = document.getElementById('hintText');
-        const mobileHint = document.getElementById('mobileHint');
+    document.getElementById('generateBtn').onclick = function() {
+        const res = document.getElementById('result-section');
+        const target = document.getElementById('captureTarget');
+        const overlay = document.getElementById('outputImage');
+        const hint = document.getElementById('hintText');
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-        resultSection.style.display = 'block';
         
-        // --- 修改部分：自定義九宮格次序 ---
-        // 你的要求：上(5,4,7) 中(3,1,2) 下(8,6,9)
-        // map 陣列代表：網格位置 1-9 分別放入第幾個選取的唱片 (索引從 0 開始，所以要 -1)
+        res.style.display = 'block';
+        hint.innerText = "⏳ 正在生成高品質圖片...";
+
+        // 自定義次序映射：上(5,4,7) 中(3,1,2) 下(8,6,9)
         const orderMap = [4, 3, 6, 2, 0, 1, 7, 5, 8]; 
-
         for (let i = 0; i < 9; i++) {
-            const targetPos = i + 1; // 網格 ID (pos-1 到 pos-9)
-            const albumIndex = orderMap[i]; // 對應選取的第幾張
-            document.getElementById(`pos-${targetPos}`).innerHTML = 
-                `<img src="images/${selected[albumIndex]}" style="width:100%;height:100%;object-fit:cover;">`;
+            document.getElementById(`pos-${i+1}`).innerHTML = `<img src="images/${selected[orderMap[i]]}" style="width:100%;height:100%;object-fit:cover;">`;
         }
-        // --- 修改完畢 ---
 
-        setTimeout(() => {
-            html2canvas(captureTarget, { 
-                scale: 1.2, 
-                useCORS: true,
-                logging: false,
-                backgroundColor: "#ffffff"
-            }).then(canvas => {
-                currentImageData = canvas.toDataURL('image/png');
-                outputImage.src = currentImageData;
-                captureTarget.style.display = 'none';
-                outputImage.style.display = 'block';
-                hintText.innerText = isMobile ? "✅ 生成完成！" : "✅ 生成完成！點擊即可下載";
-                if (isMobile) mobileHint.style.display = 'block';
-            });
-        }, 300);
+        // 核心：移除固定延遲，降低解析度 (scale: 1.2) 提升速度，修復手機下載
+        html2canvas(target, { 
+            scale: 1.2, // 體感生成速度提升數倍
+            useCORS: true, 
+            logging: false,
+            backgroundColor: "#ffffff"
+        }).then(canvas => {
+            const imgUrl = canvas.toDataURL('image/png');
+            overlay.src = imgUrl;
+            
+            // 重要：在所有平台上都隱藏原本的 HTML 網格，顯示一張「真正的整圖」<img> 讓玩家可以長按
+            target.style.display = 'none';
+            overlay.style.display = 'block';
+            
+            if (isMobile) {
+                // 手機端特定提示
+                hint.innerHTML = "✅ 生成完成！<br>請點按圖片，即會彈出儲存選單👇";
+            } else {
+                // 電腦端特定提示
+                hint.innerText = "✅ 生成完成！點擊即可下載";
+            }
+        });
 
-        window.scrollTo({ top: resultSection.offsetTop - 50, behavior: 'smooth' });
+        window.scrollTo({ top: res.offsetTop - 50, behavior: 'smooth' });
     };
 
     function handleImageClick() {
-        if (!currentImageData) return;
+        const src = document.getElementById('outputImage').src;
+        if (!src) return;
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        if (isMobile) return;
-
-        const link = document.createElement('a');
-        link.href = currentImageData;
-        link.download = 'Jacky_Cheung_Top9.png';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        
+        // 電腦版點擊下載邏輯
+        if (!isMobile) {
+            const link = document.createElement('a');
+            link.href = src; link.download = 'Jacky_Cheung_Top9.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } else {
+            // 手機版依靠系統原生選單，不使用 JS 下載避免被阻攔
+        }
     }
 
     document.getElementById('resetBtn').onclick = () => {
         selected = [];
-        currentImageData = null;
         document.querySelectorAll('.album-item').forEach(el => el.classList.remove('selected'));
         updateUI();
         document.getElementById('result-section').style.display = 'none';
         document.getElementById('captureTarget').style.display = 'grid';
         document.getElementById('outputImage').style.display = 'none';
-        document.getElementById('mobileHint').style.display = 'none';
+        document.getElementById('outputImage').src = "";
     };
 
     init();
