@@ -164,9 +164,9 @@
             document.getElementById(`pos-${i+1}`).innerHTML = `<img src="images/${selected[orderMap[i]]}" style="width:100%;height:100%;object-fit:cover;">`;
         }
 
-        // 核心：移除固定延遲，降低解析度 (scale: 1.5) 提升速度，修復手機下載
+        // 核心：移除固定延遲，降低解析度 (scale: 1.2) 提升速度，修復手機下載
         html2canvas(target, { 
-            scale: 1.5, // 體感生成速度提升數倍
+            scale: 1.2, // 體感生成速度提升數倍
             useCORS: true, 
             logging: false,
             backgroundColor: "#ffffff"
